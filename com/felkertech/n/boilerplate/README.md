@@ -20,7 +20,7 @@ This dialog can be displayed by a method call in an activity on a specific actio
 * Migrate to a native layout to prevent load lagging
 * Migrate text to a string to make it easier to change with different parameters
 
-## AppUtils
+# AppUtils
 This class is a conglomeration of methods that I've found useful.
 
 ### Methods
@@ -35,5 +35,13 @@ Both of these methods are static, so you can call them directly:
     else
       Log.d(TAG, "This isn't a TV!");
       
-## ConnectionUtils
-This class gives a few helper methods to 
+# ConnectionUtils
+This class gives a few helper methods to using the DataMessaging APIs on Android Wear, so I don't need to keep writing the same code.
+
+### NodeManager
+First, you want to create a new NodeManager (usage: `new ConnectionUtils.NodeManager(GoogleApiClient, String CAPABILITY, String PATH)`
+
+* CAPABILITY - The capability of the node that you want to message (will expand on this in the future)
+* PATH - The URI that you want to send something to
+
+This starts a 
