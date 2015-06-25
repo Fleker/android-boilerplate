@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="CAPABILITY_INTERNET">INTERNET</string>
+    <string-array name="android_wear_capabilities">
+        <item>@string/CAPABILITY_INTERNET</item>
+    </string-array>
+</resources>
