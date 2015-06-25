@@ -44,4 +44,66 @@ First, you want to create a new NodeManager (usage: `new ConnectionUtils.NodeMan
 * CAPABILITY - The capability of the node that you want to message (will expand on this in the future)
 * PATH - The URI that you want to send something to
 
-This starts a 
+This starts a service that will run for the duration of your app that scans for nodes fulfilling the given capability and then allows you to send messages to it with `sendMessage(String)`.
+
+You'll need to override `public void onMessageReceived(MessageEvent messageEvent)` either in your activity, or in a separate class extending `WearableListenerService` like so:
+
+    <service android:name=".Services.MessageListener">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+            </intent-filter>
+        </service>
+        
+There are other static methods.
+* `sendLaunchCommand(GoogleApiClient)` sends a message to every node telling it to launch an activity. This does need to be tied to the listener serivce like so:
+
+
+     if (messageEvent.getPath().equals(LAUNCHER_PATH)) {
+        Intent startIntent = new Intent(this, MainActivity.class);
+        startIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent p = PendingIntent.getActivity(this, 0, startIntent, 0);
+        try {
+            p.send();
+        } catch (PendingIntent.CanceledException e) {
+            e.printStackTrace();
+        }
+     }
+    
+* `sendData(GoogleApiClient, String name, String type, Object value)` sends a data update to all nodes. This can be done by here or using the SettingsManager class.
+    * name - Variable name to use on both sides for logistics
+    * type - Object type (`boolean` or `int`)
+    * value - The value you want to send
+
+# SettingsManager
+The SettingsManager is a class that acts as an interface to SharedPreferences making it easy to execute a variety of commands to modify user data.
+
+### Constructor
+This can be initiated in a few ways.
+`new SettingsManager(Context)`
+`new SettingsManager(Activity)`
+
+### Getters
+There are a few different methods you can use for querying data.
+`getString(resId/String)`
+`getBoolean(resId/String)`
+`getInt(resId/String)`
+`getLong(resId/String)`
+
+
+Each of these methods can take either a string directly, or a resource id to a string. They'll get the object in SharedPreferences and return it in the specified type (if that type is applicable).
+
+There are also setters for each of these types. Calling `setString(resId/String, String)` sets the content of the key to the specified value.
+
+### Wearable Integration
+The SettingsManager also makes it easy to sync data to a Wearable so both devices are up-to-date.
+`setSyncableSettingsManager(GoogleApiClient, null)` - You'll need to specify `null` as the second parameter as it is meant to be used for an unused interface.
+
+Once you link the `GoogleApiClient` to the `SettingsManager`, you are able to use new methods to send and receive data.
+
+* `pushData()` - Sends all of the SharedPreference data to the other devices
+* `pullData(DataEventBuffer)` - You can easily call this method when you override the `public void onDataChanged(DataEventBuffer dataEvents)`. Provide that argument in the SettingsManager (no need to add the GoogleApiClient), and each datum will be stored in the SharedPreferences of the other devices.
+
+As these methods use the DataMap API, it'll work across one phone and all your wearables seamlessly.
+
+#### Note
+When using this class on a Wearable, make sure you use the Wearable version of the class and not the phone version. They are slightly different but with small API changes.
