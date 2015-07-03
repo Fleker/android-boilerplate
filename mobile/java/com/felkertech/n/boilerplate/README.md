@@ -1,4 +1,4 @@
-## AboutAppDialogFragment
+# AboutAppDialogFragment
 This is a dialog that pops up giving the user some key information pertaining to the current app. It displays the version
 name, a few bits of copyright info, and allows links to be set. This information is displayed in a webview inside of a dialog.
 
@@ -19,6 +19,21 @@ This dialog can be displayed by a method call in an activity on a specific actio
 ### TODO
 * Migrate to a native layout to prevent load lagging
 * Migrate text to a string to make it easier to change with different parameters
+
+# ApplicationSettings
+This activity includes a fragment which can be used to show preferences, giving the developer and user a consistent behavior and interface for configuring the app.
+
+### Dependencies
+
+* <a href="https://github.com/afollestad/material-dialogs">`compile 'com.afollestad:material-dialogs:0.7.6.0'`</a>
+* <a href="https://github.com/jenzz/Android-MaterialPreference">`compile 'com.jenzz:materialpreference:1.3''`</a>
+* SettingsManager
+
+The app is designed to work with both Material Dialogs and Material Preferences to give an interface that looks consistent across all devices.
+
+### Usage
+This 
+
 
 # AppUtils
 This class is a conglomeration of methods that I've found useful.
