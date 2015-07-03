@@ -70,6 +70,8 @@ public class CommaArray {
             String i = iterator.next();
             out += i+",";
         }
+        if(out.length() == 0)
+            return "";
         return out.substring(0, out.length()-1);
     }
     public String arrayToString() {

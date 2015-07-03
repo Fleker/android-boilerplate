@@ -58,6 +58,11 @@ public class ApplicationSettings extends AppCompatActivity {
 
             enablePreference(R.string.sm_sync_interval, R.string.IS_PREMIUM);
             enablePreference(R.string.sm_sync_wifi, R.string.IS_PREMIUM);
+	    try {
+                bindAbout(R.string.action_about);
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
         }
         public void bindSummary(final int preference_key, final int preference_type) {
             final SettingsManager sm = new SettingsManager(getActivity());
@@ -131,6 +136,32 @@ public class ApplicationSettings extends AppCompatActivity {
             final SettingsManager sm = new SettingsManager(getActivity());
             final com.jenzz.materialpreference.Preference lp = (com.jenzz.materialpreference.Preference) findPreference(getString(resId));
             lp.setEnabled(sm.getBoolean(boolId));
+        }
+public void bindAbout(int resId) throws PackageManager.NameNotFoundException {
+            final com.jenzz.materialpreference.Preference p =
+                    (com.jenzz.materialpreference.Preference) findPreference(getString(resId));
+            PackageInfo pInfo = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0);
+            String v = "Version "+pInfo.versionName;
+            String b = "Build "+pInfo.versionCode;
+            final int[] taps = {0};
+            final SettingsManager sm = new SettingsManager(getActivity());
+            final boolean developerEnabled = sm.getBoolean(R.string.SM_DEVELOPER);
+            p.setSummary(v+"\n"+b);
+            p.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    taps[0]++;
+                    if(taps[0] > 7 && !developerEnabled) {
+                        Toast.makeText(getActivity(), "Debug mode enabled", Toast.LENGTH_SHORT).show();
+                        sm.setBoolean(R.string.SM_DEVELOPER, true);
+                        onCreate(null);
+                    } else if(taps[0] > 3 && !developerEnabled) {
+                        Toast.makeText(getActivity(), "You are "+(8-taps[0])+" steps away from debug mode", Toast.LENGTH_SHORT).show();
+                    } else if(developerEnabled)
+                        Toast.makeText(getActivity(), "Debug mode already enabled", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+            });
         }
     }
 }

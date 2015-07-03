@@ -1,4 +1,4 @@
-package com.felkertech.n.utils.wearable;
+package com.felkertech.n.virtualpets.Utils;
 
 import android.app.Activity;
 import android.content.Context;
@@ -18,20 +18,21 @@ import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.util.Iterator;
+import java.util.Set;
 
 
 /**
- * Version 1.1
+ * Version 1.2
  * Created by N on 14/9/2014.
- * Last Edited 27/5/2015
- *   * Wearable support
- * Last Edited 13/5/2015
+ * Edited 18/5/2015
+ *   * Support for individual items being pushed and pulled
+ * Edited 13/5/2015
  *   * Support for syncing data to wearables
  */
 public class SettingsManager {
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
-    private String TAG = "weather::PreferenceManager";
+    private String TAG = "PreferenceManager";
     private Context mContext;
     public SettingsManager(Activity activity) {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
@@ -46,6 +47,9 @@ public class SettingsManager {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         mContext = context;
         editor = sharedPreferences.edit();
+    }
+    public Context getContext() {
+        return mContext;
     }
     public String getString(int resId) {
         return getString(mContext.getString(resId));
@@ -107,26 +111,19 @@ public class SettingsManager {
         editor.commit();
         return val;
     }
-    public float getFloat(int resId, float def) {
-        return sharedPreferences.getFloat(mContext.getString(resId), def);
+    public int setInt(String key, int val) {
+        editor.putInt(key, val);
+        editor.commit();
+        return val;
     }
-    public float getFloat(String key, float def) {
-        return sharedPreferences.getFloat(key, def);
-    }
-
     public long getLong(int resId) {
-        return getLong(resId, 0);
-    }
-    public long getLong(int resId, long def) {
-/*
-        Log.d(TAG, "I want to get a long");
-        Log.d(TAG, "Want to get "+resId+", "+mContext.getString(resId)+"; ");
-        Log.d(TAG, "Gets value "+sharedPreferences.getString(mContext.getString(resId), "NULL"));
-*/
-        return sharedPreferences.getLong(mContext.getString(resId), def);
+        return sharedPreferences.getLong(mContext.getString(resId), 0);
     }
     public long setLong(int resId, long val) {
-        editor.putLong(mContext.getString(resId), val);
+        return setLong(mContext.getString(resId), val);
+    }
+    public long setLong(String key, long val) {
+        editor.putLong(key, val);
         editor.commit();
         return val;
     }
@@ -146,19 +143,22 @@ public class SettingsManager {
     }
 
     /* SYNCABLE SETTINGS MANAGER */
-    private Syncable syncable;
     private boolean syncEnabled = false;
     private GoogleApiClient syncClient;
 
-    public boolean setSyncableSettingsManager(GoogleApiClient gapi, Syncable s) {
-        syncable = s;
+    public boolean setSyncableSettingsManager(GoogleApiClient gapi) {
         syncClient = gapi;
         if(gapi.isConnected()) {
-            //Sync enabled
-            syncEnabled = true;
-            return true;
+            Log.d(TAG, "Connected");
+            ConnectionResult wearable = gapi.getConnectionResult(Wearable.API);
+            if(wearable.isSuccess()) {
+                //Sync enabled
+                syncEnabled = true;
+                return true;
+            }
+        } else {
+            Log.d(TAG, "Not connected");
         }
-
         return false;
     }
 
@@ -166,6 +166,10 @@ public class SettingsManager {
      * Pushes all settings to other devices
      */
     public void pushData() {
+        if(syncClient == null) {
+            Log.e(TAG, "SyncClient isn't ready yet!");
+            return;
+        }
         Log.d(TAG, "Starting to push stuff");
         Iterator<String> keys = sharedPreferences.getAll().keySet().iterator();
         PutDataMapRequest dataMap = PutDataMapRequest.create("/prefs");
@@ -173,38 +177,19 @@ public class SettingsManager {
             String key = keys.next();
             Object v = sharedPreferences.getAll().get(key);
             Log.d(TAG, key + " " + v.getClass().toString());
-            if(v.getClass().toString().equals("java.lang.Boolean")) {
+            if(v.getClass().toString().contains("Boolean")) {
                 dataMap.getDataMap().putBoolean(key, (Boolean) v);
-            } else if(v.getClass().toString().equals("java.lang.String")) {
+            } else if(v.getClass().toString().contains("String")) {
                 dataMap.getDataMap().putString(key, (String) v);
+            } else if (v.getClass().toString().contains("Integer")) {
+                dataMap.getDataMap().putInt(key, (int) v);
+            } else if (v.getClass().toString().contains("Long")) {
+                dataMap.getDataMap().putLong(key, (long) v);
             }
         }
         PutDataRequest request = dataMap.asPutDataRequest();
         PendingResult<DataApi.DataItemResult> pendingResult =
                 Wearable.DataApi.putDataItem(syncClient, request);
-    }
-    public void pushData(int resId, Object value) {
-        pushData(mContext.getString(resId), value);
-    }
-    public void pushData(String key, Object value) {
-        PutDataMapRequest dataMap = PutDataMapRequest.create("/prefs");
-
-/*
-        dataMap.getDataMap().putString(
-                mContext.getString(R.string.WEAR_SHAPE), getString(R.string.WEAR_SHAPE, "Round")
-        );
-        dataMap.getDataMap().putBoolean(
-                mContext.getString(R.string.WEAR_VIBRATE), getBoolean(R.string.WEAR_VIBRATE)
-        );
-*/
-
-        PutDataRequest request = dataMap.asPutDataRequest();
-        PendingResult<DataApi.DataItemResult> pendingResult =
-                Wearable.DataApi.putDataItem(syncClient, request);
-    }
-
-    public void pullData(String key, Object value) {
-
     }
 
     /**
@@ -212,31 +197,30 @@ public class SettingsManager {
      * @param dataEvents DataEventBuffer from the service callback
      */
     public void pullData(DataEventBuffer dataEvents) {
-        Log.d(TAG, "Received DataEventBuffer");
         Iterator<DataEvent> eventIterator = dataEvents.iterator();
         for (DataEvent event : dataEvents) {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
-                Log.d("TAG", "DataItem changed: " + event.getDataItem().getUri());
+                Log.d(TAG, "DataItem changed: " + event.getDataItem().getUri());
                 DataMap dataMap = DataMap.fromByteArray(event.getDataItem().getData());
                 Iterator<String> stringIterator = dataMap.keySet().iterator();
                 while(stringIterator.hasNext()) {
                     String key = stringIterator.next();
                     Object v = dataMap.get(key);
-//                    Log.d(TAG, "Retrieved "+key+" = "+v+", "+v.getClass().toString());
                     if(v.getClass().toString().contains("Boolean")) {
-                        Log.d(TAG, "Retrieved boolean " + key + " = " + v);
                         setBoolean(key, (Boolean) v);
+                        Log.d(TAG, "Retrieved boolean "+key+" => "+v);
                     } else if(v.getClass().toString().contains("String")) {
-                        Log.d(TAG, "Retrieved string "+key+" = "+v);
                         setString(key, (String) v);
+                        Log.d(TAG, "Retrieved string " + key+" => "+v);
+                    } else if (v.getClass().toString().contains("Integer")) {
+                        setInt(key, (int) v);
+                        Log.d(TAG, "Retrieved int " + key+" => "+v);
+                    } else if (v.getClass().toString().contains("Long")) {
+                        setLong(key, (long) v);
+                        Log.d(TAG, "Retrieved long " + key+" => "+v);
                     }
                 }
             }
         }
-    }
-
-    public interface Syncable {
-        void onItemEdited(String key, Object value);
-        void onItemReceived(String key, Object value);
     }
 }
