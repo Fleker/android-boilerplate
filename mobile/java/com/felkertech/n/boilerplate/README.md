@@ -29,11 +29,14 @@ This activity includes a fragment which can be used to show preferences, giving 
 * <a href="https://github.com/jenzz/Android-MaterialPreference">`compile 'com.jenzz:materialpreference:1.3''`</a>
 * SettingsManager
 
-The app is designed to work with both Material Dialogs and Material Preferences to give an interface that looks consistent across all devices.
+The app is designed to work with both Material Dialogs and Material Preferences to give an interface that looks consistent across all devices. There are several layouts that are included (layout, layout-720, layout-960) for a pleasant interface on larger screen sizes.
 
 ### Usage
-This 
+This uses the normal xml method for adding settings, but integrates with these libraries using a few helper methods.
 
+* `void bindSummary(int preference_key, int preference_type)` - Opens up an applicable dialog and updates the preference summary with the result. Works with `EDIT_TEXT_PREF` and `LIST_PREF`.
+* `void enablePreference(int preference_key, int bool_id)` - Checks a boolean shared preference and enables or disables a preference based on the result
+* `void bindAbout(int preference_key)` - Sets the summary of the given preference to be the version name and code. Optionally you can tap this preference a few times to enable some sort of developer or debug mode, which can be tied to enabling and disabling preferences.
 
 # AppUtils
 This class is a conglomeration of methods that I've found useful.
